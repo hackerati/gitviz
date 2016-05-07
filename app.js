@@ -15,12 +15,12 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // Github Webhook handler
 app.post('/hook', function (req, res) {
     if(!req.isXHub || !req.isXHubValid()){
-        return res.status(400).json({ error: 'X-Hub-Signature Invalid' });
+        return res.status(403).json({ error: 'unauthorized' });
     }
 
     console.log(req.body);
 
-    return res.status(201).json({ success: 'ok' });
+    return res.status(201).json({ success: 'created' });
 });
 
 app.listen(port, function (error) {
