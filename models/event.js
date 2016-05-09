@@ -7,12 +7,9 @@ var db = new neo4j.GraphDatabase({
 });
 
 var Event = module.exports = function Event(_node) {
-    // All we'll really store is the node; the rest of our properties will be
-    // derivable or just pass-through properties (see below).
     this._node = _node;
 }
 
-// Creates the user and persists (saves) it to the db, incl. indexing it:
 Event.create = function (params, callback) {
     db.cypher({
         query: 'CREATE (event:Event { id : {id}, timestamp : {timestamp}, event_type: {event_type}, payload: {payload} }) RETURN event',
