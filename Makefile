@@ -1,4 +1,5 @@
 BUILD_NUMBER ?= $(USER)-snapshot
+X_HUB_SECRET ?= "fake_xhub_secret"
 PROJECT_NAME = "hackerati/gitviz"
 
 # lists all available targets
@@ -28,4 +29,4 @@ deploy:
 	@echo 'no deployment steps yet'
 
 run:
-	docker run -it -P --rm $(PROJECT_NAME):$(BUILD_NUMBER)
+	docker run -e "X_HUB_SECRET=$(X_HUB_SECRET)" -it -p 3000:3000 --rm $(PROJECT_NAME):$(BUILD_NUMBER)

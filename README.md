@@ -7,10 +7,10 @@ Visualizing git activity starts with collecting git events. There are many ways 
 To setup a local webhook consumer, first clone the repository and run the server:
 
 ```bash
-$ git clone git@github.com:thehackerati/gitviz.git 
+$ git clone git@github.com:thehackerati/gitviz.git
 $ cd gitviz
-$ npm install
-$ X_HUB_SECRET=yoursecretkey node app.js
+$ export X_HUB_SECRET=yoursecretkey
+$ make build run
 $ open http://localhost:3000
 ```
 
@@ -54,9 +54,9 @@ Note that your Payload URL will change each time that you restart ngrok.
 You can also choose which events you want Github to send. We'll need to figure out what we need to create an engaging visualization, so for now, just send everything.
 
 ## TODO
-- dockerize
-- deploy
-- figure out data pipeline - log file->DB or direct DB insert?`
+- [x] dockerize
+- [ ] deploy
+- [ ] figure out data pipeline - log file->DB or direct DB insert?`
 
 ## License
 Copyright (c) 2016 Hackerati. This software is licensed under the MIT License.
