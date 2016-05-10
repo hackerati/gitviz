@@ -4,14 +4,18 @@ Visualizing git activity starts with collecting git events. There are many ways 
 
 ## Run Local Webhook Consumer
 
-To setup a local webhook consumer, first clone the repository and run the server:
+To setup a local webhook consumer, you need a functioning Docker environment. On OS X, install Docker Toolbox and start a docker-machine. You'll also need administrative access to a Github repo or organization to configure a Webhook; and you'll need to setup a Neo4J instance on GrapheneDB.
+
+Then clone the repository and run the server:
 
 ```bash
 $ git clone git@github.com:thehackerati/gitviz.git
 $ cd gitviz
 $ export X_HUB_SECRET=yoursecretkey
+$ export GRAPHENEDB_URL=yourinstanceurl
+$ export NEO4J_AUTH=yourcredentials
 $ make build run
-$ open http://localhost:3000
+$ open http://yourdockermachineip:3000
 ```
 
 X_HUB_SECRET is a shared secret that you will also configure when you setup the Github Webhook.
@@ -20,7 +24,7 @@ Because Github webhooks originate outside of your local network, you will probab
 
 ```bash
 $ brew cask install ngrok
-$ ngrok http 3000
+$ ngrok http yourdockermachineip:3000
 ```
 
 You'll see a screen that looks like this:
@@ -28,15 +32,15 @@ You'll see a screen that looks like this:
 ```bash
 ngrok by @inconshreveable                                 (Ctrl+C to quit)
 
-Tunnel Status                 online
-Version                       2.0.25/2.0.25
-Region                        United States (us)
-Web Interface                 http://127.0.0.1:4040
-Forwarding                    http://8530525b.ngrok.io -> localhost:3000
-Forwarding                    https://8530525b.ngrok.io -> localhost:3000
+Tunnel Status            online
+Version                  2.0.25/2.0.25
+Region                   United States (us)
+Web Interface            http://127.0.0.1:4040
+Forwarding               http://8530525b.ngrok.io -> yourdockermachineip:3000
+Forwarding               https://8530525b.ngrok.io -> yourdockermachineip:3000
 
-Connections                   ttl     opn     rt1     rt5     p50     p90
-                              0       0       0.00    0.00    0.00    0.00
+Connections              ttl     opn     rt1     rt5     p50     p90
+                         0       0       0.00    0.00    0.00    0.00
 ```
 
 ## Configure the Github Webhook

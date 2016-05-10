@@ -1,5 +1,7 @@
 BUILD_NUMBER ?= $(USER)-snapshot
 X_HUB_SECRET ?= "fake_xhub_secret"
+GRAPHENEDB_URL ?= "fake_graphenedb_url"
+NEO4J_AUTH ?= "fake_neo4j_auth"
 PROJECT_NAME = "hackerati/gitviz"
 
 # lists all available targets
@@ -29,4 +31,4 @@ deploy:
 	@echo 'no deployment steps yet'
 
 run:
-	docker run -e "X_HUB_SECRET=$(X_HUB_SECRET)" -it -p 3000:3000 --rm $(PROJECT_NAME):$(BUILD_NUMBER)
+	docker run -e "X_HUB_SECRET=$(X_HUB_SECRET)" -e "GRAPHENEDB_URL=$(GRAPHENEDB_URL)" -e "NEO4J_AUTH=$(NEO4J_AUTH)" -it -p 3000:3000 --rm $(PROJECT_NAME):$(BUILD_NUMBER)
