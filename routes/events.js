@@ -83,9 +83,52 @@ exports.create = function (req, res, next) {
             // Any Git push to a Repository, including editing tags or
             // branches. Commits via API actions that update references are
             // also counted. This is the default event.
+
+            console.log(req.body.ref); // branch
+            console.log(req.body.before);
+            console.log(req.body.after);
+
+            // commits array
+
+            // commit head - sames as last commit in the commits array
+            console.log(req.body.head_commit.id);
+            console.log(req.body.head_commit.tree_id);
+            console.log(req.body.head_commit.message);
+            console.log(req.body.head_commit.timestamp);
+
+            console.log(req.body.head_commit.author.name);
+            console.log(req.body.head_commit.author.email);
+
+            console.log(req.body.head_commit.committer.name);
+            console.log(req.body.head_commit.committer.email);
+
+            // head_commit added array
+            // head_commit removed array
+            // head_commit modified array
+
+            console.log(req.body.repository.id);
+            console.log(req.body.repository.name);
+            console.log(req.body.repository.full_name);
+            console.log(req.body.repository.description);
+            console.log(req.body.repository.created_at);
+            console.log(req.body.repository.updated_at);
+            console.log(req.body.repository.pushed_at);
+
+            console.log(req.body.repository.owner.name);
+            console.log(req.body.repository.owner.email);
+
+            console.log(req.body.pusher.name);
+            console.log(req.body.pusher.email);
+
+            console.log(req.body.organization.login);
+            console.log(req.body.organization.id);
+
+            console.log(req.body.sender.login);
+            console.log(req.body.sender.id);
+            console.log(req.body.sender.avatar_url);
+
             Event.createPush(event_id, req.body, function (err, event) {
                 if (err) throw err;
-                console.log(event);
                 return res.status(201).json(event);
             });
             break;
