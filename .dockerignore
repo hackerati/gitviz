@@ -1,0 +1,7 @@
+README.md
+node_modules
+npm-debug.log
+run.sh
+.DS_Store
+LICENSE
+Makefile
