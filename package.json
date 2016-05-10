@@ -14,5 +14,8 @@
     "express-x-hub": "^1.0.4",
     "moment": "^2.13.0",
     "neo4j": "^2.0.0-RC2"
+  },
+  "scripts": {
+    "start": "node app.js"
   }
 }
