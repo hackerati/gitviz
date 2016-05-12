@@ -58,18 +58,18 @@ EventParams.getPush = function (event_id, payload, callback) {
     getCommonEventParams (event_id, EventParams.GITHUB_PUSH, payload,
                           function (err, event_params) {
 
-/*
-        console.log(event_params);
-
         // add Push event specific properties
-        console.log(payload.before);
-        console.log(payload.after);
+        event_params.before = payload.before;
+        event_params.after = payload.after;
 
         // add branch
-        console.log(payload.ref); // branch
+        event_params.ref = payload.ref;
 
+        // add pusher
+        event_params.pusher_name = payload.pusher.name;
+
+/*
         // commits array
-
         // commit head - sames as last commit in the commits array
         console.log(payload.head_commit.id);
         console.log(payload.head_commit.tree_id);
@@ -85,10 +85,6 @@ EventParams.getPush = function (event_id, payload, callback) {
         // head_commit added array
         // head_commit removed array
         // head_commit modified array
-
-        // add pusher
-        console.log(payload.pusher.name);
-        console.log(payload.pusher.email);
 */
 
         callback (null, event_params);
