@@ -44,7 +44,7 @@ function getCommonEventParams (event_id, event_type, payload, callback) {
         created_at: payload.repository.created_at,
         updated_at: payload.repository.updated_at,
         pushed_at: payload.repository.pushed_at,
-        org_login: payload.organization.id,
+        org_login: payload.organization.login,
         repo_owner_name: payload.repository.owner.name,
         repo_owner_email: payload.repository.owner.email,
         sender_login: payload.sender.login,
