@@ -39,14 +39,8 @@ function getCommonEventParams (event_id, event_type, payload, callback) {
         event_id: event_id,
         event_type: event_type,
         timestamp: moment().format(),
-        repo_id: payload.repository.id,
         repo_name: payload.repository.name,
-        created_at: payload.repository.created_at,
-        updated_at: payload.repository.updated_at,
-        pushed_at: payload.repository.pushed_at,
         org_login: payload.organization.login,
-        repo_owner_name: payload.repository.owner.name,
-        repo_owner_email: payload.repository.owner.email,
         sender_login: payload.sender.login,
     };
 
@@ -65,8 +59,7 @@ EventParams.getPush = function (event_id, payload, callback) {
         // add branch
         event_params.ref = payload.ref;
 
-        // add pusher
-        event_params.pusher_name = payload.pusher.name;
+        // assume pusher and sender are always the same
 
 /*
         // commits array
