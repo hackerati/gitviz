@@ -32,11 +32,8 @@ Event.createPush = function (params, callback) {
     // Connect before/after.
     _.map (params.commits, function(commit, index) {
         query += `\nCREATE (commit${index}:Commit { id : '${commit.id}', timestamp: '${commit.timestamp}', message: '${commit.message}', author_name: '${commit.author.name}' })`;
-/*
-        `MERGE (commit${index}) -[relc${index}:belongs_to]-> (branch)`,
-        `MERGE (commit${index}) -[relc${index}:belongs_to]-> (event)`,
-        console.log (commit_str);
-*/
+        query += `\nMERGE (event) -[relc${index}1:pushes]-> (commit${index})`;
+        query += `\nMERGE (commit${index}) -[relc${index}2:belongs_to]-> (branch)`;
     });
 
     // transaction

@@ -70,8 +70,6 @@ EventParams.getPush = function (event_id, payload, callback) {
               event_params.commits.push (new_commit);
         });
 
-        console.log(event_params.commits);
-
         callback (null, event_params);
     });
 };
