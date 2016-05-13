@@ -1,15 +1,16 @@
 var moment = require('moment');
+var _ = require('lodash');
 
 // Constructor
 function EventParams () {
   // always initialize all instance properties
 }
 
-/*
- * Define Github webhook event types. See docs for details:
- *
- * https://developer.github.com/v3/activity/events/types/
- */
+// 
+// Define Github webhook event types. See docs for details:
+//
+// https://developer.github.com/v3/activity/events/types/
+//
 EventParams.GITHUB_COMMIT_COMMENT = "commit_comment";
 EventParams.GITHUB_CREATE = "create";
 EventParams.GITHUB_DELETE = "delete";
@@ -32,7 +33,7 @@ EventParams.GITHUB_STATUS = "status";
 EventParams.GITHUB_TEAM_ADD = "team_add";
 EventParams.GITHUB_WATCH = "watch";
 
-// private functions
+// Private functions
 function getCommonEventParams (event_id, event_type, payload, callback) {
     // Collect common event parameters
     var event_params = {
@@ -47,7 +48,7 @@ function getCommonEventParams (event_id, event_type, payload, callback) {
     callback (null, event_params);
 };
 
-// class methods
+// Public class methods
 EventParams.getPush = function (event_id, payload, callback) {
     getCommonEventParams (event_id, EventParams.GITHUB_PUSH, payload,
                           function (err, event_params) {
@@ -61,28 +62,19 @@ EventParams.getPush = function (event_id, payload, callback) {
 
         // assume pusher and sender are always the same
 
-/*
         // commits array
-        // commit head - sames as last commit in the commits array
-        console.log(payload.head_commit.id);
-        console.log(payload.head_commit.tree_id);
-        console.log(payload.head_commit.message);
-        console.log(payload.head_commit.timestamp);
+        event_params.commits = new Array ();
+        _.map (payload.commits, function(commit) {
+              // pick the commit properties that we need
+              var new_commit = _.pick(commit, ['id', 'timestamp', 'message', 'author', 'added', 'removed', 'modified']);
+              event_params.commits.push (new_commit);
+        });
 
-        console.log(payload.head_commit.author.name);
-        console.log(payload.head_commit.author.email);
-
-        console.log(payload.head_commit.committer.name);
-        console.log(payload.head_commit.committer.email);
-
-        // head_commit added array
-        // head_commit removed array
-        // head_commit modified array
-*/
+        console.log(event_params.commits);
 
         callback (null, event_params);
     });
 };
 
-// export the class
+// Export the class
 module.exports = EventParams;

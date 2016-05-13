@@ -4,7 +4,7 @@
   "description": "git visualization",
   "main": "app.js",
   "scripts": {
-    "test": "test"
+    "start": "node app.js"
   },
   "author": "Geoff Scott (geoff@hackerati.us)",
   "license": "MIT",
@@ -12,10 +12,8 @@
     "body-parser": "^1.15.1",
     "express": "^4.13.4",
     "express-x-hub": "^1.0.4",
+    "lodash": "^4.12.0",
     "moment": "^2.13.0",
     "neo4j": "^2.0.0-RC2"
-  },
-  "scripts": {
-    "start": "node app.js"
   }
 }

@@ -1,4 +1,5 @@
 var neo4j = require('neo4j');
+var _ = require('lodash');
 
 var db = new neo4j.GraphDatabase({
     url: process.env['NEO4J_URL'] || process.env['GRAPHENEDB_URL'] ||
@@ -27,9 +28,18 @@ Event.createPush = function (params, callback) {
         'MERGE (branch) -[rel6:belongs_to]-> (repo)',
     ].join('\n');
 
+    // Always create new commits. Commits belong to the branch.
+    // Connect before/after.
+    _.map (params.commits, function(commit, index) {
+        query += `\nCREATE (commit${index}:Commit { id : '${commit.id}', timestamp: '${commit.timestamp}', message: '${commit.message}', author_name: '${commit.author.name}' })`;
 /*
-Always create new commits. Commits belong to the branch. Connect before/after.
+        `MERGE (commit${index}) -[relc${index}:belongs_to]-> (branch)`,
+        `MERGE (commit${index}) -[relc${index}:belongs_to]-> (event)`,
+        console.log (commit_str);
 */
+    });
+
+    // transaction
 
     db.cypher({
         query: query,
