@@ -13,12 +13,14 @@ var Event = module.exports = function Event(_node) {
 
 Event.createPush = function (params, callback) {
     // Always create a new Event, associated with the appropriate repo, org,
-    // and users, which are either created or updated.
+    // and users, which are either created or updated. Assume sender and
+    // pusher are always the same and construct a User from the sender's login
+    // and the pusher's email. We'll need email to connect Commits to Users.
     var query = [
-        'CREATE (event:Event { id : {event_id}, timestamp : {timestamp}, type: {event_type} })',
+        'CREATE (event:Event { event_id : {event_id}, timestamp : {timestamp}, type: {event_type} })',
         'MERGE (repo:Repo { name : {repo_name} })',
         'MERGE (org:Org { login: {org_login} })',
-        'MERGE (sender:User { name: {sender_login} })',
+        'MERGE (sender:User { login: {sender_login}, email: {pusher_email}})',
         'MERGE (event) -[rel1:belongs_to]-> (repo)',
         'MERGE (repo) -[rel2:belongs_to]-> (org)',
         'MERGE (sender) -[rel4:sends]-> (event)',
@@ -28,10 +30,11 @@ Event.createPush = function (params, callback) {
         'MERGE (branch) -[rel6:belongs_to]-> (repo)',
     ].join('\n');
 
-    // Always create new commits. Commits belong to the branch.
-    // Connect before/after.
+    // Always create new commits. Commits belong to the branch and exist in a
+    // fixed sequence within the event. Simplest solution for seqence is to
+    // obtain the commit sequence by sorting commits by timestamp.
     _.map (params.commits, function(commit, index) {
-        query += `\nCREATE (commit${index}:Commit { id : '${commit.id}', timestamp: '${commit.timestamp}', message: '${commit.message}', author_name: '${commit.author.name}' })`;
+        query += `\nCREATE (commit${index}:Commit { commit_id : '${commit.id}', timestamp: '${commit.timestamp}', message: '${commit.message}', author_email: '${commit.author.email}' })`;
         query += `\nMERGE (event) -[relc${index}1:pushes]-> (commit${index})`;
         query += `\nMERGE (commit${index}) -[relc${index}2:belongs_to]-> (branch)`;
     });

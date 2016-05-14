@@ -60,7 +60,8 @@ EventParams.getPush = function (event_id, payload, callback) {
         // add branch
         event_params.ref = payload.ref;
 
-        // assume pusher and sender are always the same
+        // assume pusher and sender are always the same, but grab pusher email
+        event_params.pusher_email = payload.pusher.email;
 
         // commits array
         event_params.commits = new Array ();
