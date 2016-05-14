@@ -33,10 +33,30 @@ Event.createPush = function (params, callback) {
     // Always create new commits. Commits belong to the branch and exist in a
     // fixed sequence within the event. Simplest solution for seqence is to
     // obtain the commit sequence by sorting commits by timestamp.
-    _.map (params.commits, function(commit, index) {
-        query += `\nCREATE (commit${index}:Commit { commit_id : '${commit.id}', timestamp: '${commit.timestamp}', message: '${commit.message}', author_email: '${commit.author.email}' })`;
-        query += `\nMERGE (event) -[relc${index}1:pushes]-> (commit${index})`;
-        query += `\nMERGE (commit${index}) -[relc${index}2:belongs_to]-> (branch)`;
+    _.map (params.commits, function(commit, ii) {
+        var cstr = `commit${ii}`
+        query += `\nCREATE (${cstr}:Commit { commit_id : '${commit.id}', timestamp: '${commit.timestamp}', message: '${commit.message}', author_email: '${commit.author.email}' })`;
+        query += `\nMERGE (event) -[relc${ii}1:pushes]-> (${cstr})`;
+        query += `\nMERGE (${cstr}) -[relc${ii}2:belongs_to]-> (branch)`;
+
+        _.map (commit.added, function(file, jj) {
+            // Save the full file path, including branch and repo
+            var filename = `${params.repo_name}/${params.ref}/${file}`;
+            query += `\nCREATE (f${ii}${jj}:File { name : '${filename}' })`;
+            query += `\nMERGE (${cstr}) -[a${ii}${jj}:adds]-> (f${ii}${jj})`;
+        });
+
+/*
+        _.map (commit.removed, function(file, jj) {
+            var filename = `${params.repo_name}/${params.ref}/${file}`;
+            query += `\nMERGE (${cstr}) -[r${ii}${jj}:removes]-> (f${ii}${jj})`;
+        });
+
+        _.map (commit.modified, function(file, jj) {
+            var filename = `${params.repo_name}/${params.ref}/${file}`;
+            query += `\nMERGE (${cstr}) -[m${ii}${jj}:modifies]-> (f${ii}${jj})`;
+        });
+*/
     });
 
     // transaction
