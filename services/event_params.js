@@ -40,7 +40,7 @@ function getCommonEventParams (event_id, event_type, payload, callback) {
         event_id: event_id,
         event_type: event_type,
         timestamp: moment().format(),
-        repo_name: payload.repository.name,
+        repo_name: payload.repository.full_name,
         org_login: payload.organization.login,
         sender_login: payload.sender.login,
     };
