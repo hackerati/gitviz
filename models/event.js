@@ -13,20 +13,32 @@ var Event = module.exports = function Event(_node) {
 }
 
 Event.createPush = function (params, callback) {
+    var queries = [{
+        // Always create a new Event, associated with the appropriate
+        // repo, org, and users.
+        query: createEvent (params),
+    }, {
+        query: addPushEventProperties (params),
+    }, {
+        query: connectToPreviousPushEvent (params),
+    }];
+
+    // it's possible for push events to have no commits
+    if (hasCommits (params)) {
+        queries.push ({ query: addCommitsAndFiles (params)});
+
+        // only do this if any of the commits modify/remove files
+        if (hasModifiedOrRemovedFiles (params)) {
+            console.log('has modified or removed files');
+            queries.push ({ query: modifyAndRemoveFiles (params)});
+        }
+    }
+
+    // console.log(queries);
+
+    // batch queries in a single request which is inherently transactional
     db.cypher({
-        queries: [{
-            // Always create a new Event, associated with the appropriate
-            // repo, org, and users.
-            query: createEvent (params),
-        }, {
-            query: addPushEventProperties (params),
-        }, {
-            query: connectToPreviousPushEvent (params),
-        }, {
-            query: addCommitsAndFiles (params),
-        }, {
-            query: modifyAndRemoveFiles (params),
-        }],
+        queries: queries
     }, function (err, results) {
         // returns array of results, which we can ignore
         if (err) return callback (err);
@@ -34,8 +46,25 @@ Event.createPush = function (params, callback) {
     });
 };
 
+function hasCommits (params) {
+    return (!_.isEmpty (params.commits));
+}
+
+function hasModifiedOrRemovedFiles (params) {
+    var result = false;
+    _.map (params.commits, function(commit) {
+        if (!_.isEmpty (commit.modified)) {
+            result = true;
+        }
+        if (!_.isEmpty (commit.removed)) {
+            result = true;
+        }
+    });
+    return (result);
+}
+
 //
-// Private functions
+// Private functions (build Neo4j Cypher queries)
 //
 function createEvent (params) {
     // Assume sender and pusher are always the same and construct a User from
@@ -102,7 +131,9 @@ function addCommitsAndFiles (params) {
         query += `\nMERGE (event) -[${rel1}:pushes]-> (${cstr})`;
         query += `\nMERGE (${cstr}) -[${rel2}:belongs_to]-> (branch)`;
 
-        query += addFiles(commit.added, cstr, branch);
+        if (!_.isEmpty (commit.added)) {
+            query += addFiles(commit.added, cstr, branch);
+        }
     });
 
     console.log (query);
@@ -117,8 +148,13 @@ function modifyAndRemoveFiles (params) {
     _.map (params.commits, function(commit) {
         var cstr = genId.generate();
 
-        query += `\nMATCH (${cstr}:Commit { commit_id: '${commit.id}' } )`,
-        query += modifyFiles(commit.modified, cstr, branch);
+        query += `\nMATCH (${cstr}:Commit { commit_id: '${commit.id}' } )`;
+        if (!_.isEmpty (commit.modified)) {
+            query += modifyFiles(commit.modified, cstr, branch);
+        }
+        if (!_.isEmpty (commit.removed)) {
+            query += removeFiles(commit.removed, cstr, branch);
+        }
     });
 
     console.log (query);
@@ -140,7 +176,7 @@ function addFiles (files, commit, branch) {
         query += `\nMERGE (${commit}) -[${rel1}:adds]-> (${fstr})`;
     });
 
-    console.log (query);
+    // console.log (query);
 
     return (query);
 }
@@ -158,7 +194,7 @@ function removeFiles (files, commit, branch) {
         query += `\nMERGE (${commit}) -[${rel1}:removes]-> (${fstr})`;
     });
 
-    console.log (query);
+    // console.log (query);
 
     return (query);
 }
@@ -177,7 +213,7 @@ function modifyFiles (files, commit, branch) {
         query += `\nMERGE (${commit}) -[${rel1}:modifies]-> (${fstr})`;
     });
 
-    console.log (query);
+    // console.log (query);
 
     return (query);
 }
