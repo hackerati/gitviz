@@ -13,6 +13,8 @@ var Event = module.exports = function Event(_node) {
 }
 
 Event.createPush = function (params, callback) {
+    // batch queries in a single request which is inherently transactional
+    // by building an array of queries.
     var queries = [{
         // Always create a new Event, associated with the appropriate
         // repo, org, and users.
@@ -32,11 +34,13 @@ Event.createPush = function (params, callback) {
             console.log('has modified or removed files');
             queries.push ({ query: modifyAndRemoveFiles (params)});
         }
+
+        // connect commits to users
+        queries.push ({ query: connectCommitsToUsers (params)});
     }
 
     // console.log(queries);
 
-    // batch queries in a single request which is inherently transactional
     db.cypher({
         queries: queries
     }, function (err, results) {
@@ -136,7 +140,7 @@ function addCommitsAndFiles (params) {
         }
     });
 
-    console.log (query);
+    // console.log (query);
 
     return (query);
 }
@@ -156,6 +160,18 @@ function modifyAndRemoveFiles (params) {
             query += removeFiles(commit.removed, cstr, branch);
         }
     });
+
+    // console.log (query);
+
+    return (query);
+}
+
+function connectCommitsToUsers (params) {
+    var query = [
+        `MATCH (ev:Event { event_id: '${params.event_id}' } )-[:pushes]->(commit)`,
+        `MATCH (user:User { email: commit.author_email })`,
+        `MERGE (user) -[r:commits]-> (commit)`,
+    ].join('\n');
 
     console.log (query);
 
