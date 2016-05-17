@@ -13,8 +13,9 @@ var Event = module.exports = function Event(_node) {
 }
 
 Event.createPush = function (params, callback) {
-    // batch queries in a single request which is inherently transactional
-    // by building an array of queries.
+    var path = `${params.repo_name}/${params.ref}`; // to build file queries
+
+    // XXX refactor this
     var queries = [{
         // Always create a new Event, associated with the appropriate
         // repo, org, and users.
@@ -26,21 +27,30 @@ Event.createPush = function (params, callback) {
     }];
 
     // it's possible for push events to have no commits
-    if (hasCommits (params)) {
-        queries.push ({ query: addCommitsAndFiles (params)});
+    _.map (params.commits, function(commit) {
+        // create new commit. no need to store sequence since commits can
+        // be sorted by timestamp to determine sequence.
+        queries.push ({ query: buildCommitQuery (params.event_id,
+                                                 params.ref,
+                                                 commit) });
 
-        // only do this if any of the commits modify/remove files
-        if (hasModifiedOrRemovedFiles (params)) {
-            console.log('has modified or removed files');
-            queries.push ({ query: modifyAndRemoveFiles (params)});
+        if ((!_.isEmpty (commit.added))) {
+            queries.push ({ query: buildAddedFilesQuery (path, commit) });
+        }
+        if ((!_.isEmpty (commit.modified))) {
+            queries.push ({ query: buildModifiedFilesQuery (path, commit) });
+        }
+        if ((!_.isEmpty (commit.removed))) {
+            queries.push ({ query: buildRemovedFilesQuery (path, commit) });
         }
 
-        // connect commits to users
-        queries.push ({ query: connectCommitsToUsers (params)});
-    }
+        // connect commit to user
+        queries.push ({ query: buildConnectCommitToUserQuery (commit) });
+    });
 
-    // console.log(queries);
+    console.log(queries);
 
+    // run the queries in a single network request, as an atomic transaction
     db.cypher({
         queries: queries
     }, function (err, results) {
@@ -49,23 +59,6 @@ Event.createPush = function (params, callback) {
         callback (null);
     });
 };
-
-function hasCommits (params) {
-    return (!_.isEmpty (params.commits));
-}
-
-function hasModifiedOrRemovedFiles (params) {
-    var result = false;
-    _.map (params.commits, function(commit) {
-        if (!_.isEmpty (commit.modified)) {
-            result = true;
-        }
-        if (!_.isEmpty (commit.removed)) {
-            result = true;
-        }
-    });
-    return (result);
-}
 
 //
 // Private functions (build Neo4j Cypher queries)
@@ -116,120 +109,96 @@ function connectToPreviousPushEvent (params) {
     return (query);
 }
 
-function addCommitsAndFiles (params) {
-    var query = '';
-    var branch = `${params.repo_name}/${params.ref}`;
-
-    query += `\nMATCH (event:Event { event_id: '${params.event_id}' } )`,
-    query += `\nMATCH (branch:Branch { ref: '${params.ref}' })`,
-
-    // Always create new commits. Commits belong to the branch and exist in a
-    // fixed sequence within the event. Simplest solution for seqence is to
-    // obtain the commit sequence by sorting commits by timestamp.
-    _.map (params.commits, function(commit) {
-        var cstr = genId.generate();
-        var rel1 = genId.generate();
-        var rel2 = genId.generate();
-
-        query += `\nCREATE (${cstr}:Commit { commit_id : '${commit.id}', timestamp: '${commit.timestamp}', message: '${commit.message}', author_email: '${commit.author.email}' })`;
-        query += `\nMERGE (event) -[${rel1}:pushes]-> (${cstr})`;
-        query += `\nMERGE (${cstr}) -[${rel2}:belongs_to]-> (branch)`;
-
-        if (!_.isEmpty (commit.added)) {
-            query += addFiles(commit.added, cstr, branch);
-        }
-    });
-
-    // console.log (query);
-
-    return (query);
-}
-
-function modifyAndRemoveFiles (params) {
-    var query = '';
-    var branch = `${params.repo_name}/${params.ref}`;
-
-    _.map (params.commits, function(commit) {
-        var cstr = genId.generate();
-
-        query += `\nMATCH (${cstr}:Commit { commit_id: '${commit.id}' } )`;
-        if (!_.isEmpty (commit.modified)) {
-            query += modifyFiles(commit.modified, cstr, branch);
-        }
-        if (!_.isEmpty (commit.removed)) {
-            query += removeFiles(commit.removed, cstr, branch);
-        }
-    });
-
-    // console.log (query);
-
-    return (query);
-}
-
-function connectCommitsToUsers (params) {
+function buildCommitQuery (event_id, ref, commit) {
     var query = [
-        `MATCH (ev:Event { event_id: '${params.event_id}' } )-[:pushes]->(commit)`,
-        `MATCH (user:User { email: commit.author_email })`,
-        `MERGE (user) -[r:commits]-> (commit)`,
+        `MATCH (event:Event { event_id: '${event_id}' } )`,
+        `MATCH (branch:Branch { ref: '${ref}' })`,
+        `CREATE (commit:Commit { commit_id : '${commit.id}', timestamp: '${commit.timestamp}', message: '${commit.message}', author_email: '${commit.author.email}' })`,
+        `MERGE (event) -[rel1:pushes]-> (commit)`,
+        `MERGE (commit) -[rel2:belongs_to]-> (branch)`,
     ].join('\n');
+
+    // console.log (query);
+
+    return (query);
+}
+
+function buildAddedFilesQuery (path, commit) {
+    var query = '';
+
+    query += `MATCH (commit:Commit { commit_id: '${commit.id}' } )`;
+
+    _.map (commit.added, function(file) {
+        var fstr = genId.generate();
+        var rel1 = genId.generate();
+        var filename = `${path}/${file}`; // Save full repo/branch/file
+
+        // always create a new file when adding
+        query += `\nCREATE (${fstr}:File { name : '${filename}' })`;
+        query += `\nMERGE (commit) -[${rel1}:adds]-> (${fstr})`;
+    });
+
+    // console.log (query);
+
+    return (query);
+}
+
+function buildModifiedFilesQuery (path, commit) {
+    var query = '';
+
+    console.log (commit);
+
+    query += `MATCH (commit:Commit { commit_id: '${commit.id}' } )`;
+
+    _.map (commit.modified, function(file) {
+        var fstr = genId.generate();
+        var rel1 = genId.generate();
+        var filename = `${path}/${file}`; // Save full repo/branch/file
+
+        // find existing file to modify
+        query += `\nWITH commit`;
+        query += `\nMATCH (${fstr}:File { name : '${filename}' })`;
+        query += `\nMERGE (commit) -[${rel1}:modifies]-> (${fstr})`;
+    });
 
     console.log (query);
 
     return (query);
 }
 
-
-// pass array of added files and the branch to which they were added
-function addFiles (files, commit, branch) {
+function buildRemovedFilesQuery (path, commit) {
     var query = '';
 
-    _.map (files, function(file) {
+    console.log (commit);
+
+    query += `MATCH (commit:Commit { commit_id: '${commit.id}' } )`;
+
+    _.map (commit.removed, function(file) {
         var fstr = genId.generate();
         var rel1 = genId.generate();
-        var filename = `${branch}/${file}`; // Save full repo/branch/file
+        var filename = `${path}/${file}`; // Save full repo/branch/file
 
-        query += `\nCREATE (${fstr}:File { name : '${filename}' })`;
-        query += `\nMERGE (${commit}) -[${rel1}:adds]-> (${fstr})`;
+        // find existing file to remove
+        query += `\nWITH commit`;
+        query += `\nMATCH (${fstr}:File { name : '${filename}' })`;
+        query += `\nMERGE (commit) -[${rel1}:removes]-> (${fstr})`;
     });
 
-    // console.log (query);
+    console.log (query);
 
     return (query);
 }
 
-function removeFiles (files, commit, branch) {
-    var query = '';
+function buildConnectCommitToUserQuery (commit) {
+    var query = [
+        `MATCH (commit:Commit { commit_id: '${commit.id}' } )`,
+        `MATCH (user:User { email: commit.author_email })`,
+        `MERGE (user) -[r:commits]-> (commit)`,
+    ].join('\n');
 
-    _.map (files, function(file) {
-        var fstr = genId.generate();
-        var rel1 = genId.generate();
-        var filename = `${branch}/${file}`; // Save full repo/branch/file
+    console.log (commit);
 
-        // match the file
-        query += `\nMATCH (${fstr}:File { name: '${filename}' } )`;
-        query += `\nMERGE (${commit}) -[${rel1}:removes]-> (${fstr})`;
-    });
-
-    // console.log (query);
-
-    return (query);
-}
-
-
-function modifyFiles (files, commit, branch) {
-    var query = '';
-
-    _.map (files, function(file) {
-        var fstr = genId.generate();
-        var rel1 = genId.generate();
-        var filename = `${branch}/${file}`; // Save full repo/branch/file
-
-        // match the file
-        query += `\nMATCH (${fstr}:File { name: '${filename}' } )`;
-        query += `\nMERGE (${commit}) -[${rel1}:modifies]-> (${fstr})`;
-    });
-
-    // console.log (query);
+    console.log (query);
 
     return (query);
 }
