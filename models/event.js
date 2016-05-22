@@ -13,20 +13,18 @@ var Event = module.exports = function Event(_node) {
 }
 
 Event.createPush = function (params, callback) {
+    var queries = [];
     var path = `${params.repo_name}/${params.ref}`; // to build file queries
 
-    // XXX refactor this
-    var queries = [{
-        // Always create a new Event, associated with the appropriate
-        // repo, org, and users.
-        query: createEvent (params),
-    }, {
-        query: addPushEventProperties (params),
-    }, {
-        query: connectToPreviousPushEvent (params),
-    }];
+    // always create a new Event, associated with the appropriate repo, org,
+    // and user
+    queries.push ({ query: buildBaseEventQuery (params) } );
 
-    // it's possible for push events to have no commits
+    // handle properties and relationships specific to push events
+    queries.push ({ query: buildPushEventQuery (params) } );
+    queries.push ({ query: buildConnectToPreviousPushEventQuery (params) } );
+
+    // add commits... it's possible for push events to have no commits
     _.map (params.commits, function(commit) {
         // create new commit. no need to store sequence since commits can
         // be sorted by timestamp to determine sequence.
@@ -63,7 +61,7 @@ Event.createPush = function (params, callback) {
 //
 // Private functions (build Neo4j Cypher queries)
 //
-function createEvent (params) {
+function buildBaseEventQuery (params) {
     // Assume sender and pusher are always the same and construct a User from
     // the sender's login and the pusher's email. We'll need email to connect
     // Commits to Users.
@@ -82,7 +80,7 @@ function createEvent (params) {
     return (query);
 }
 
-function addPushEventProperties (params) {
+function buildPushEventQuery (params) {
     var query = [
         `MATCH (ev:Event { event_id: '${params.event_id}' } )`,
         `MATCH (repo:Repo { name : '${params.repo_name}' })`,
@@ -97,7 +95,7 @@ function addPushEventProperties (params) {
     return (query);
 }
 
-function connectToPreviousPushEvent (params) {
+function buildConnectToPreviousPushEventQuery (params) {
     var query = [
         `MATCH (this_push:Event { event_id: '${params.event_id}' } )`,
         `MATCH (previous_push:Event { after: '${params.before}' } )`,
@@ -146,8 +144,6 @@ function buildAddedFilesQuery (path, commit) {
 function buildModifiedFilesQuery (path, commit) {
     var query = '';
 
-    console.log (commit);
-
     query += `MATCH (commit:Commit { commit_id: '${commit.id}' } )`;
 
     _.map (commit.modified, function(file) {
@@ -161,15 +157,13 @@ function buildModifiedFilesQuery (path, commit) {
         query += `\nMERGE (commit) -[${rel1}:modifies]-> (${fstr})`;
     });
 
-    console.log (query);
+    // console.log (query);
 
     return (query);
 }
 
 function buildRemovedFilesQuery (path, commit) {
     var query = '';
-
-    console.log (commit);
 
     query += `MATCH (commit:Commit { commit_id: '${commit.id}' } )`;
 
@@ -184,7 +178,7 @@ function buildRemovedFilesQuery (path, commit) {
         query += `\nMERGE (commit) -[${rel1}:removes]-> (${fstr})`;
     });
 
-    console.log (query);
+    // console.log (query);
 
     return (query);
 }
@@ -196,9 +190,7 @@ function buildConnectCommitToUserQuery (commit) {
         `MERGE (user) -[r:commits]-> (commit)`,
     ].join('\n');
 
-    console.log (commit);
-
-    console.log (query);
+    // console.log (query);
 
     return (query);
 }
