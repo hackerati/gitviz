@@ -1,7 +1,18 @@
 var express = require('express');
 var bodyParser = require('body-parser');
 var xhub = require('express-x-hub');
+var neo4j = require('neo4j');
 var routes = require('./routes')
+var EventModel = require('./models/event')
+
+// treat Event as a singleton; save it's database connection
+var db = new neo4j.GraphDatabase({
+    url: process.env['NEO4J_URL'] || process.env['GRAPHENEDB_URL'] ||
+        'http://neo4j:neo4j@localhost:7474',
+    auth: process.env['NEO4J_AUTH'],
+});
+
+EventModel.setDatabaseConnection (db);
 
 var app = express();
 var port = 3000;
