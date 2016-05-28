@@ -27,7 +27,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // Github Webhook handler
 app.post('/event', routes.events.create);
 
-app.listen(port, function (error) {
+app.listen(port, (error) => {
     if (error) {
         console.error (error)
     } else {
