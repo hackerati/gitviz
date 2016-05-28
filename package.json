@@ -4,12 +4,14 @@
   "description": "git visualization",
   "main": "app.js",
   "scripts": {
-    "start": "node app.js"
+    "start": "node app.js",
+    "test": "eslint .; mocha tests --recursive"
   },
   "author": "Geoff Scott (geoff@hackerati.us)",
   "license": "MIT",
   "dependencies": {
     "body-parser": "^1.15.1",
+    "debug": "^2.2.0",
     "es6-error": "^3.0.0",
     "express": "^4.13.4",
     "express-x-hub": "^1.0.4",
@@ -19,6 +21,9 @@
     "neo4j": "^2.0.0-RC2"
   },
   "devDependencies": {
-    "chai": "^3.5.0"
+    "babel-eslint": "^6.0.4",
+    "chai": "^3.5.0",
+    "eslint": "^2.10.2",
+    "sinon": "^1.17.4"
   }
 }

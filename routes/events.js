@@ -15,15 +15,13 @@ exports.create = function (req, res, next) {
 
     try {
         var event = GithubEventFactory.createEvent (event_id, event_type, req.body);
-        Event.createPush (event.toParams (), function (err) {
+        event.save (function (err) {
             if (err) {
-                console.log (err);
                 return res.status(502).json({ error: err });
             }
             return res.status(201).json({ success: 'Created' });
         });
     } catch (err) {
-        console.log (err);
         return res.status(501).json({ error: err });
     }
 };
