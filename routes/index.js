@@ -1,1 +1,1 @@
-exports.events = require('./events');
+exports.events = require('./events')

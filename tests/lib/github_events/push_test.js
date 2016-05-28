@@ -3,7 +3,7 @@
 var chai = require('chai')
 var expect = chai.expect
 var sinon = require('sinon')
-var _ = require('lodash');
+var _ = require('lodash')
 
 var GithubPushEvent = require('../../../lib/github_events/push')
 var Event = require('../../../models/event')
@@ -35,12 +35,12 @@ function fixRemovedFile (query) {
     return (_.replace (fixFileId (query), id_regexp, '-[rel:removes]-> (file)'))
 }
 
-describe ('GithubPushEvent', function () {
+describe ('GithubPushEvent', () => {
     var id
     var type
     var payload
 
-    beforeEach (function () {
+    beforeEach (() => {
         id = 'my_id'
         type = 'my_type'
         payload = {
@@ -54,8 +54,8 @@ describe ('GithubPushEvent', function () {
         }
     })
 
-    it ('should save an event without commits', function () {
-        var stub = sinon.stub(Event, "runQuery", function (received_queries, callback) {
+    it ('should save an event without commits', () => {
+        var stub = sinon.stub(Event, "runQuery", (received_queries, callback) => {
             received_queries[0].query = fixTime (received_queries[0].query)
             var expected_queries = [
                 { query: 'CREATE (ev:Event { event_id : \'my_id\', timestamp : \'2016-05-27T10:53:59-04:00\', type: \'my_type\' })\nMERGE (repo:Repo { name : \'test repo\' })\nMERGE (org:Org { login: \'test org\' })\nMERGE (sender:User { login: \'test user\', email: \'test email\' })\nMERGE (ev) -[rel1:belongs_to]-> (repo)\nMERGE (repo) -[rel2:belongs_to]-> (org)\nMERGE (sender) -[rel4:sends]-> (ev)' },
@@ -63,21 +63,21 @@ describe ('GithubPushEvent', function () {
                 { query: 'MATCH (this_push:Event { event_id: \'my_id\' } )\nMATCH (previous_push:Event { after: \'before hash\' } )\nMERGE (this_push) -[rel:follows]-> (previous_push)' }
             ]
 
-            _.map (received_queries, function (received_query, index) {
+            _.map (received_queries, (received_query, index) => {
                 expect (received_query.query).to.equal(expected_queries[index].query)
             })
             callback (null)
         })
         payload.commits = new Array ()
         var event = new GithubPushEvent (id, type, payload)
-        event.save (function (err) {
+        event.save ((err) => {
             expect (err).to.be.null
         })
         stub.restore ()
     })
 
-    it ('should save an event with commits and files to add', function () {
-        var stub = sinon.stub(Event, "runQuery", function (received_queries, callback) {
+    it ('should save an event with commits and files to add', () => {
+        var stub = sinon.stub(Event, "runQuery", (received_queries, callback) => {
             received_queries[0].query = fixTime (received_queries[0].query)
             received_queries[4].query = fixAddedFile (received_queries[4].query)
             var expected_queries = [
@@ -89,7 +89,7 @@ describe ('GithubPushEvent', function () {
                 { query: 'MATCH (commit:Commit { commit_id: \'commit_id\' } )\nMATCH (user:User { email: \'author_email\' })\nMERGE (user) -[r:commits]-> (commit)' },
             ]
 
-            _.map (received_queries, function (received_query, index) {
+            _.map (received_queries, (received_query, index) => {
                 expect (received_query.query).to.equal(expected_queries[index].query)
             })
             callback (null)
@@ -102,14 +102,14 @@ describe ('GithubPushEvent', function () {
             added: [ 'file.txt' ],
         })
         var event = new GithubPushEvent (id, type, payload)
-        event.save (function (err) {
+        event.save ((err) => {
             expect (err).to.be.null
         })
         stub.restore ()
     })
 
-    it ('should save an event with commits and files to modify', function () {
-        var stub = sinon.stub(Event, "runQuery", function (received_queries, callback) {
+    it ('should save an event with commits and files to modify', () => {
+        var stub = sinon.stub(Event, "runQuery", (received_queries, callback) => {
             received_queries[0].query = fixTime (received_queries[0].query)
             received_queries[4].query = fixModifiedFile (received_queries[4].query)
             var expected_queries = [
@@ -121,7 +121,7 @@ describe ('GithubPushEvent', function () {
                 { query: 'MATCH (commit:Commit { commit_id: \'commit_id\' } )\nMATCH (user:User { email: \'author_email\' })\nMERGE (user) -[r:commits]-> (commit)' },
             ]
 
-            _.map (received_queries, function (received_query, index) {
+            _.map (received_queries, (received_query, index) => {
                 expect (received_query.query).to.equal(expected_queries[index].query)
             })
             callback (null)
@@ -134,14 +134,14 @@ describe ('GithubPushEvent', function () {
             modified: [ 'file.txt' ],
         })
         var event = new GithubPushEvent (id, type, payload)
-        event.save (function (err) {
+        event.save ((err) => {
             expect (err).to.be.null
         })
         stub.restore ()
     })
 
-    it ('should save an event with commits and files to remove', function () {
-        var stub = sinon.stub(Event, "runQuery", function (received_queries, callback) {
+    it ('should save an event with commits and files to remove', () => {
+        var stub = sinon.stub(Event, "runQuery", (received_queries, callback) => {
             received_queries[0].query = fixTime (received_queries[0].query)
             received_queries[4].query = fixRemovedFile (received_queries[4].query)
             var expected_queries = [
@@ -153,7 +153,7 @@ describe ('GithubPushEvent', function () {
                 { query: 'MATCH (commit:Commit { commit_id: \'commit_id\' } )\nMATCH (user:User { email: \'author_email\' })\nMERGE (user) -[r:commits]-> (commit)' },
             ]
 
-            _.map (received_queries, function (received_query, index) {
+            _.map (received_queries, (received_query, index) => {
                 expect (received_query.query).to.equal(expected_queries[index].query)
             })
             callback (null)
@@ -166,14 +166,14 @@ describe ('GithubPushEvent', function () {
             removed: [ 'file.txt' ],
         })
         var event = new GithubPushEvent (id, type, payload)
-        event.save (function (err) {
+        event.save ((err) => {
             expect (err).to.be.null
         })
         stub.restore ()
     })
 
-    it ('should return an error when it fails to save to the database', function () {
-        var stub = sinon.stub (Event, "runQuery", function (queries, callback) {
+    it ('should return an error when it fails to save to the database', () => {
+        var stub = sinon.stub (Event, "runQuery", (queries, callback) => {
             // Stub the Event model to return an error to the callback, as it would if
             // it couldn't connect with the database or if the query was invalid
             var err = new Error ('my_error')
@@ -181,7 +181,7 @@ describe ('GithubPushEvent', function () {
         })
         payload.commits = new Array ()
         var event = new GithubPushEvent (id, type, payload)
-        event.save (function (err) {
+        event.save ((err) => {
             expect (err).to.not.be.null
         })
         stub.restore ()
