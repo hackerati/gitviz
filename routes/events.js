@@ -17,11 +17,13 @@ exports.create = function (req, res, next) {
         var event = GithubEventFactory.createEvent (event_id, event_type, req.body)
         event.save ((err) => {
             if (err) {
+                console.log (err)
                 return res.status(502).json({ error: err })
             }
             return res.status(201).json({ success: 'Created' })
         })
     } catch (err) {
+	console.log (err)
         return res.status(501).json({ error: err })
     }
 }
