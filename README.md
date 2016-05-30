@@ -59,8 +59,14 @@ You can also choose which events you want Github to send. We'll need to figure o
 
 ## TODO
 - [x] dockerize
-- [ ] deploy
-- [ ] figure out data pipeline - log file->DB or direct DB insert?`
+- [x] ES6-ify
+- [x] add unit & integration tests
+- [ ] add nginx proxy container
+- [ ] add neo4j container (local dev & test only)
+- [ ] run tests against clean neo4j database
+- [ ] automatically build (Travis-CI?)
+- [ ] deploy (Elastic Beanstalk?)
+- [ ] add other Github event handlers (repository, create, delete, pull_request, etc.)
 
 ## License
 Copyright (c) 2016 Hackerati. This software is licensed under the MIT License.
