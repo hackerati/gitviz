@@ -40,15 +40,48 @@ describe ("Gitviz Webhook Handler", () => {
         options.headers['X-GitHub-Delivery'] = uuid.v4()
     })
 
-    it ("should return a 403 error when the signature is missing")
+    it ("should return a 403 error when the signature is missing", () => {
+        var payload = loadGithubEventFixture ('ping')
+        options.headers['X-GitHub-Event'] = 'ping'
+	options.headers['X-Hub-Signature'] = '' // missing signature
+        var response = chakram.post (end_point, payload)
+        return expect(response).to.have.status(403)
+    })
 
-    it ("should return a 403 error when signed with an incorrect secret")
+    it ("should return a 403 error when signed with an incorrect secret", () => {
+        var payload = loadGithubEventFixture ('ping')
+        options.headers['X-GitHub-Event'] = 'ping'
+	options.headers['X-Hub-Signature'] = sign (JSON.stringify(payload), 'bad secret')
+        var response = chakram.post (end_point, payload)
+        return expect(response).to.have.status(403)
+    })
 
-    it ("should return a 501 error when event type is not implemented")
+    it ("should return a 501 error when event type is not implemented", () => {
+        var payload = loadGithubEventFixture ('ping')
+        options.headers['X-GitHub-Event'] = 'gollum' // valid but unlikely to implement
+	options.headers['X-Hub-Signature'] = sign (JSON.stringify(payload), secret)
+        var response = chakram.post (end_point, payload)
+        return expect(response).to.have.status(501)
+    })
 
-    it ("should return a 501 error when event type is invalid")
+    it ("should return a 501 error when event type is invalid", () => {
+        var payload = loadGithubEventFixture ('ping')
+        options.headers['X-GitHub-Event'] = 'this is totally made up'
+	options.headers['X-Hub-Signature'] = sign (JSON.stringify(payload), secret)
+        var response = chakram.post (end_point, payload)
+        return expect(response).to.have.status(501)
+    })
 
-    it ("should update the existing event when the event is re-delivered")
+    it ("should update the existing event when the event is re-delivered", () => {
+        var payload = loadGithubEventFixture ('push_no_commits')
+        options.headers['X-GitHub-Event'] = 'push'
+	options.headers['X-Hub-Signature'] = sign (JSON.stringify(payload), secret)
+        var response1 = chakram.post (end_point, payload)
+        chakram.waitFor([ expect(response1).to.have.status(201) ]) // wait for 1st event
+        var response2 = chakram.post (end_point, payload) // redeliver 1st event
+        expect(response2).to.have.status(201) // should query DB to verify update
+        return chakram.wait()
+    })
 
     it ("should handle a ping event")
 
