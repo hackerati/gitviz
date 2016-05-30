@@ -3,6 +3,7 @@ var expect = chakram.expect
 var request = require('request')
 var crypto = require('crypto')
 var loader = require("fixture-loader")
+var uuid = require('node-uuid')
 
 // generate Github signature
 function sign (payload, secret) {
@@ -14,7 +15,7 @@ function sign (payload, secret) {
 // load JSON fixture from file
 function loadGithubEventFixture (filename) {
     const fixture_loader = loader.create (__dirname) // relative to location of this file
-    return fixture_loader.loadParsedJson ('./', filename)
+    return fixture_loader.loadParsedJson ('./fixtures', filename)
 }
 
 describe ("Gitviz Webhook Handler", () => {
@@ -29,11 +30,25 @@ describe ("Gitviz Webhook Handler", () => {
             headers: {
                 'content-type': 'application/json',
                 'User-Agent': 'GitHub-Hookshot/e4028f5',
-                'X-GitHub-Delivery': 'k980eac00-1401-11e6-83be-63a046c0865a',
             }
         }
         chakram.setRequestDefaults (options)
     })
+
+    beforeEach (() => {
+        // generate a unique event ID
+        options.headers['X-GitHub-Delivery'] = uuid.v4()
+    })
+
+    it ("should return a 403 error when the signature is missing")
+
+    it ("should return a 403 error when signed with an incorrect secret")
+
+    it ("should return a 501 error when event type is not implemented")
+
+    it ("should return a 501 error when event type is invalid")
+
+    it ("should update the existing event when the event is re-delivered")
 
     it ("should handle a ping event")
 
@@ -44,7 +59,7 @@ describe ("Gitviz Webhook Handler", () => {
     it ("should handle a delete branch/tag event")
 
     it ("should handle a push event with no commits", () => {
-        var payload = loadGithubEventFixture ('./fixtures/push_no_commits')
+        var payload = loadGithubEventFixture ('push_no_commits')
         options.headers['X-GitHub-Event'] = 'push'
 	options.headers['X-Hub-Signature'] = sign (JSON.stringify(payload), secret)
         var response = chakram.post (end_point, payload)
@@ -52,7 +67,7 @@ describe ("Gitviz Webhook Handler", () => {
     })
 
     it ("should handle a push event with commits and files to add", () => {
-        var payload = loadGithubEventFixture ('./fixtures/push_add_file')
+        var payload = loadGithubEventFixture ('push_add_file')
         options.headers['X-GitHub-Event'] = 'push'
 	options.headers['X-Hub-Signature'] = sign (JSON.stringify(payload), secret)
         var response = chakram.post (end_point, payload)
@@ -60,7 +75,7 @@ describe ("Gitviz Webhook Handler", () => {
     })
 
     it ("should handle a push event with commits and files to modify", () => {
-        var payload = loadGithubEventFixture ('./fixtures/push_modify_file')
+        var payload = loadGithubEventFixture ('push_modify_file')
         options.headers['X-GitHub-Event'] = 'push'
 	options.headers['X-Hub-Signature'] = sign (JSON.stringify(payload), secret)
         var response = chakram.post (end_point, payload)
@@ -68,7 +83,7 @@ describe ("Gitviz Webhook Handler", () => {
     })
 
     it ("should handle a push event with commits and files to remove", () => {
-        var payload = loadGithubEventFixture ('./fixtures/push_remove_file')
+        var payload = loadGithubEventFixture ('push_remove_file')
         options.headers['X-GitHub-Event'] = 'push'
 	options.headers['X-Hub-Signature'] = sign (JSON.stringify(payload), secret)
         var response = chakram.post (end_point, payload)

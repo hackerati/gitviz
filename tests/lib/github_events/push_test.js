@@ -11,7 +11,7 @@ var Event = require('../../../models/event')
 function fixTime (query) {
     // timestamp in received queries was automatically generated so we can't
     // match it here. Instead, try to replace it with a known value.
-    const time_regexp = new RegExp ('[0-9]{1,4}-[0-9]{1,2}-[0-9]{1,2}T[0-9]{1,2}:[0-9]{1,2}:[0-9]{1,2}-[0-9]{1,2}:[0-9]{1,2}')
+    const time_regexp = new RegExp ('[0-9]{1,4}-[0-9]{1,2}-[0-9]{1,2}T[0-9]{1,2}:[0-9]{1,2}:[0-9]{1,2}-[0-9]{1,2}:[0-9]{1,2}', 'g')
     return (_.replace (query, time_regexp, '2016-05-27T10:53:59-04:00'))
 }
 
@@ -58,7 +58,7 @@ describe ('GithubPushEvent', () => {
         var stub = sinon.stub(Event, "runQuery", (received_queries, callback) => {
             received_queries[0].query = fixTime (received_queries[0].query)
             var expected_queries = [
-                { query: 'CREATE (ev:Event { event_id : \'my_id\', timestamp : \'2016-05-27T10:53:59-04:00\', type: \'my_type\' })\nMERGE (repo:Repo { name : \'test repo\' })\nMERGE (org:Org { login: \'test org\' })\nMERGE (sender:User { login: \'test user\', email: \'test email\' })\nMERGE (ev) -[rel1:belongs_to]-> (repo)\nMERGE (repo) -[rel2:belongs_to]-> (org)\nMERGE (sender) -[rel4:sends]-> (ev)' },
+                { query: 'MERGE (ev:Event { event_id : \'my_id\', type: \'my_type\' })\nON CREATE SET ev.original_timestamp = \'2016-05-27T10:53:59-04:00\'\nON MATCH SET ev.redelivered_timestamp = \'2016-05-27T10:53:59-04:00\'\nMERGE (repo:Repo { name : \'test repo\' })\nMERGE (org:Org { login: \'test org\' })\nMERGE (sender:User { login: \'test user\', email: \'test email\' })\nMERGE (ev) -[rel1:belongs_to]-> (repo)\nMERGE (repo) -[rel2:belongs_to]-> (org)\nMERGE (sender) -[rel4:sends]-> (ev)' },
                 { query: 'MATCH (ev:Event { event_id: \'my_id\' } )\nMATCH (repo:Repo { name : \'test repo\' })\nSET ev += { before: \'before hash\', after: \'after hash\' }\nMERGE (branch:Branch { ref: \'my branch\' })\nMERGE (ev) -[rel5:pushes_to]-> (branch)\nMERGE (branch) -[rel6:belongs_to]-> (repo)' },
                 { query: 'MATCH (this_push:Event { event_id: \'my_id\' } )\nMATCH (previous_push:Event { after: \'before hash\' } )\nMERGE (this_push) -[rel:follows]-> (previous_push)' }
             ]
@@ -81,11 +81,11 @@ describe ('GithubPushEvent', () => {
             received_queries[0].query = fixTime (received_queries[0].query)
             received_queries[4].query = fixAddedFile (received_queries[4].query)
             var expected_queries = [
-                { query: 'CREATE (ev:Event { event_id : \'my_id\', timestamp : \'2016-05-27T10:53:59-04:00\', type: \'my_type\' })\nMERGE (repo:Repo { name : \'test repo\' })\nMERGE (org:Org { login: \'test org\' })\nMERGE (sender:User { login: \'test user\', email: \'test email\' })\nMERGE (ev) -[rel1:belongs_to]-> (repo)\nMERGE (repo) -[rel2:belongs_to]-> (org)\nMERGE (sender) -[rel4:sends]-> (ev)' },
+                { query: 'MERGE (ev:Event { event_id : \'my_id\', type: \'my_type\' })\nON CREATE SET ev.original_timestamp = \'2016-05-27T10:53:59-04:00\'\nON MATCH SET ev.redelivered_timestamp = \'2016-05-27T10:53:59-04:00\'\nMERGE (repo:Repo { name : \'test repo\' })\nMERGE (org:Org { login: \'test org\' })\nMERGE (sender:User { login: \'test user\', email: \'test email\' })\nMERGE (ev) -[rel1:belongs_to]-> (repo)\nMERGE (repo) -[rel2:belongs_to]-> (org)\nMERGE (sender) -[rel4:sends]-> (ev)' },
                 { query: 'MATCH (ev:Event { event_id: \'my_id\' } )\nMATCH (repo:Repo { name : \'test repo\' })\nSET ev += { before: \'before hash\', after: \'after hash\' }\nMERGE (branch:Branch { ref: \'my branch\' })\nMERGE (ev) -[rel5:pushes_to]-> (branch)\nMERGE (branch) -[rel6:belongs_to]-> (repo)' },
                 { query: 'MATCH (this_push:Event { event_id: \'my_id\' } )\nMATCH (previous_push:Event { after: \'before hash\' } )\nMERGE (this_push) -[rel:follows]-> (previous_push)' },
-                { query: 'MATCH (event:Event { event_id: \'my_id\' } )\nMATCH (branch:Branch { ref: \'my branch\' })\nCREATE (commit:Commit { commit_id : \'commit_id\', timestamp: \'my_timestamp\', author_email: \'author_email\' })\nMERGE (event) -[rel1:pushes]-> (commit)\nMERGE (commit) -[rel2:belongs_to]-> (branch)' },
-                { query: 'MATCH (commit:Commit { commit_id: \'commit_id\' } )\nCREATE (file:File { name : \'test repo/my branch/file.txt\' })\nMERGE (commit) -[rel:adds]-> (file)' },
+                { query: 'MATCH (event:Event { event_id: \'my_id\' } )\nMATCH (branch:Branch { ref: \'my branch\' })\nMERGE (commit:Commit { commit_id : \'commit_id\', timestamp: \'my_timestamp\', author_email: \'author_email\' })\nMERGE (event) -[rel1:pushes]-> (commit)\nMERGE (commit) -[rel2:belongs_to]-> (branch)' },
+                { query: 'MATCH (commit:Commit { commit_id: \'commit_id\' } )\nMERGE (file:File { name : \'test repo/my branch/file.txt\' })\nMERGE (commit) -[rel:adds]-> (file)' },
                 { query: 'MATCH (commit:Commit { commit_id: \'commit_id\' } )\nMATCH (user:User { email: \'author_email\' })\nMERGE (user) -[r:commits]-> (commit)' },
             ]
 
@@ -113,10 +113,10 @@ describe ('GithubPushEvent', () => {
             received_queries[0].query = fixTime (received_queries[0].query)
             received_queries[4].query = fixModifiedFile (received_queries[4].query)
             var expected_queries = [
-                { query: 'CREATE (ev:Event { event_id : \'my_id\', timestamp : \'2016-05-27T10:53:59-04:00\', type: \'my_type\' })\nMERGE (repo:Repo { name : \'test repo\' })\nMERGE (org:Org { login: \'test org\' })\nMERGE (sender:User { login: \'test user\', email: \'test email\' })\nMERGE (ev) -[rel1:belongs_to]-> (repo)\nMERGE (repo) -[rel2:belongs_to]-> (org)\nMERGE (sender) -[rel4:sends]-> (ev)' },
+                { query: 'MERGE (ev:Event { event_id : \'my_id\', type: \'my_type\' })\nON CREATE SET ev.original_timestamp = \'2016-05-27T10:53:59-04:00\'\nON MATCH SET ev.redelivered_timestamp = \'2016-05-27T10:53:59-04:00\'\nMERGE (repo:Repo { name : \'test repo\' })\nMERGE (org:Org { login: \'test org\' })\nMERGE (sender:User { login: \'test user\', email: \'test email\' })\nMERGE (ev) -[rel1:belongs_to]-> (repo)\nMERGE (repo) -[rel2:belongs_to]-> (org)\nMERGE (sender) -[rel4:sends]-> (ev)' },
                 { query: 'MATCH (ev:Event { event_id: \'my_id\' } )\nMATCH (repo:Repo { name : \'test repo\' })\nSET ev += { before: \'before hash\', after: \'after hash\' }\nMERGE (branch:Branch { ref: \'my branch\' })\nMERGE (ev) -[rel5:pushes_to]-> (branch)\nMERGE (branch) -[rel6:belongs_to]-> (repo)' },
                 { query: 'MATCH (this_push:Event { event_id: \'my_id\' } )\nMATCH (previous_push:Event { after: \'before hash\' } )\nMERGE (this_push) -[rel:follows]-> (previous_push)' },
-                { query: 'MATCH (event:Event { event_id: \'my_id\' } )\nMATCH (branch:Branch { ref: \'my branch\' })\nCREATE (commit:Commit { commit_id : \'commit_id\', timestamp: \'my_timestamp\', author_email: \'author_email\' })\nMERGE (event) -[rel1:pushes]-> (commit)\nMERGE (commit) -[rel2:belongs_to]-> (branch)' },
+                { query: 'MATCH (event:Event { event_id: \'my_id\' } )\nMATCH (branch:Branch { ref: \'my branch\' })\nMERGE (commit:Commit { commit_id : \'commit_id\', timestamp: \'my_timestamp\', author_email: \'author_email\' })\nMERGE (event) -[rel1:pushes]-> (commit)\nMERGE (commit) -[rel2:belongs_to]-> (branch)' },
                 { query: 'MATCH (commit:Commit { commit_id: \'commit_id\' } )\nWITH commit\nMERGE (file:File { name : \'test repo/my branch/file.txt\' })\nMERGE (commit) -[rel:modifies]-> (file)' },
                 { query: 'MATCH (commit:Commit { commit_id: \'commit_id\' } )\nMATCH (user:User { email: \'author_email\' })\nMERGE (user) -[r:commits]-> (commit)' },
             ]
@@ -145,10 +145,10 @@ describe ('GithubPushEvent', () => {
             received_queries[0].query = fixTime (received_queries[0].query)
             received_queries[4].query = fixRemovedFile (received_queries[4].query)
             var expected_queries = [
-                { query: 'CREATE (ev:Event { event_id : \'my_id\', timestamp : \'2016-05-27T10:53:59-04:00\', type: \'my_type\' })\nMERGE (repo:Repo { name : \'test repo\' })\nMERGE (org:Org { login: \'test org\' })\nMERGE (sender:User { login: \'test user\', email: \'test email\' })\nMERGE (ev) -[rel1:belongs_to]-> (repo)\nMERGE (repo) -[rel2:belongs_to]-> (org)\nMERGE (sender) -[rel4:sends]-> (ev)' },
+                { query: 'MERGE (ev:Event { event_id : \'my_id\', type: \'my_type\' })\nON CREATE SET ev.original_timestamp = \'2016-05-27T10:53:59-04:00\'\nON MATCH SET ev.redelivered_timestamp = \'2016-05-27T10:53:59-04:00\'\nMERGE (repo:Repo { name : \'test repo\' })\nMERGE (org:Org { login: \'test org\' })\nMERGE (sender:User { login: \'test user\', email: \'test email\' })\nMERGE (ev) -[rel1:belongs_to]-> (repo)\nMERGE (repo) -[rel2:belongs_to]-> (org)\nMERGE (sender) -[rel4:sends]-> (ev)' },
                 { query: 'MATCH (ev:Event { event_id: \'my_id\' } )\nMATCH (repo:Repo { name : \'test repo\' })\nSET ev += { before: \'before hash\', after: \'after hash\' }\nMERGE (branch:Branch { ref: \'my branch\' })\nMERGE (ev) -[rel5:pushes_to]-> (branch)\nMERGE (branch) -[rel6:belongs_to]-> (repo)' },
                 { query: 'MATCH (this_push:Event { event_id: \'my_id\' } )\nMATCH (previous_push:Event { after: \'before hash\' } )\nMERGE (this_push) -[rel:follows]-> (previous_push)' },
-                { query: 'MATCH (event:Event { event_id: \'my_id\' } )\nMATCH (branch:Branch { ref: \'my branch\' })\nCREATE (commit:Commit { commit_id : \'commit_id\', timestamp: \'my_timestamp\', author_email: \'author_email\' })\nMERGE (event) -[rel1:pushes]-> (commit)\nMERGE (commit) -[rel2:belongs_to]-> (branch)' },
+                { query: 'MATCH (event:Event { event_id: \'my_id\' } )\nMATCH (branch:Branch { ref: \'my branch\' })\nMERGE (commit:Commit { commit_id : \'commit_id\', timestamp: \'my_timestamp\', author_email: \'author_email\' })\nMERGE (event) -[rel1:pushes]-> (commit)\nMERGE (commit) -[rel2:belongs_to]-> (branch)' },
                 { query: 'MATCH (commit:Commit { commit_id: \'commit_id\' } )\nWITH commit\nMERGE (file:File { name : \'test repo/my branch/file.txt\' })\nMERGE (commit) -[rel:removes]-> (file)' },
                 { query: 'MATCH (commit:Commit { commit_id: \'commit_id\' } )\nMATCH (user:User { email: \'author_email\' })\nMERGE (user) -[r:commits]-> (commit)' },
             ]
