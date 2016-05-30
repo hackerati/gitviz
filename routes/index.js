@@ -1,1 +1,0 @@
-exports.events = require('./events')

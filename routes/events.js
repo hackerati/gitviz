@@ -4,7 +4,7 @@ var GithubEventFactory = require('../lib/github_events/factory')
 var GithubEventNotImplementedError = require('../lib/github_events/errors')
 var GithubEventNotValidError = require('../lib/github_events/errors')
 
-module.exports = class Event {
+module.exports = class EventRouteHandlers {
     // 
     // static create ():
     //

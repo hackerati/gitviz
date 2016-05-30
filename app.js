@@ -1,33 +1,33 @@
+'use strict'
+
 var express = require('express')
 var bodyParser = require('body-parser')
 var xhub = require('express-x-hub')
 var neo4j = require('neo4j')
 var EventModel = require('./models/event')
-var EventRoutes = require('./routes/events')
+var EventRouteHandlers = require('./routes/events')
 
 // Event is a singleton; save it's database connection
-var db = new neo4j.GraphDatabase({
+EventModel.setDatabaseConnection (new neo4j.GraphDatabase ({
     url: process.env['NEO4J_URL'] || process.env['GRAPHENEDB_URL'] ||
         'http://neo4j:neo4j@localhost:7474',
     auth: process.env['NEO4J_AUTH'],
-})
+}))
 
-EventModel.setDatabaseConnection (db)
-
-var app = express()
+var app = express ()
 var port = 3000
 
 // Middleware to validate Github X-Hub-Signature
-app.use(xhub({ algorithm: 'sha1', secret: process.env.X_HUB_SECRET }))
+app.use (xhub ( { algorithm: 'sha1', secret: process.env.X_HUB_SECRET } ))
 
 // Middleware to parse JSON requests
-app.use(bodyParser.json())
-app.use(bodyParser.urlencoded({ extended: true }))
+app.use (bodyParser.json ())
+app.use (bodyParser.urlencoded ( { extended: true } ))
 
-// Github Webhook handler
-app.post('/event', EventRoutes.create)
+// Github Webhook handler. EventRouteHandlers is a singleton
+app.post ('/event', EventRouteHandlers.create)
 
-app.listen(port, (error) => {
+app.listen (port, (error) => {
     if (error) {
         console.error (error)
     } else {
