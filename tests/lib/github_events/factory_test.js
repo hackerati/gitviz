@@ -34,13 +34,13 @@ describe ('GithubEventFactory', () => {
         }
     })
 
-    it ('should throw a GithubEventNotImplementedError for create event', () => {
+    it ('should throw a GithubEventNotImplementedError for gollum event', () => {
         try {
-            var event = GithubEventFactory.createEvent (id, 'create', payload)
+            var event = GithubEventFactory.createEvent (id, 'gollum', payload)
             expect (true).to.be.false  // fail
         } catch (err) {
             expect (err).to.be.an.instanceOf (GithubEventNotImplementedError)
-            expect (err.message).to.equal ('create')
+            expect (err.message).to.equal ('gollum')
         }
     })
 
